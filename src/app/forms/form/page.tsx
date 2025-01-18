@@ -1,9 +1,22 @@
 "use client";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
+import { UploadButton } from "@/utils/uploadthing";
+import axios from "axios";
 import { useState } from "react";
 
 const FormLayout = () => {
+  const [restaurant_id, setId] = useState("");
+  const [table_name, setTable_name] = useState("");
+  const [booking_status, setStatus] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
+  const [price, setPrice] = useState("");
+  const [table_size, setTable_size] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [qaFields, setQaFields] = useState<
     { question: string; answer: string }[]
   >([{ question: "", answer: "" }]);
@@ -22,6 +35,32 @@ const FormLayout = () => {
       updatedFields[index] = { ...updatedFields[index], [field]: value };
       return updatedFields;
     });
+  };
+  const saveImageToDatabase = async (imageUrl: string) => {
+    setUploadedUrl(imageUrl);
+    alert("Image uploaded successfully!");
+  };
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    try {
+      const response = await axios.post(
+        "http://localhost:4000/api/restaurants/add_table",
+        {
+          restaurant_id,
+          table_name,
+          booking_status: 0,
+          description,
+          image: uploadedUrl || image,
+          price,
+          table_size,
+        },
+      );
+      setSuccess("Table added successful!");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "An error occurred");
+      setError("Table add failed. Please fill it correctly.");
+    }
   };
 
   return (
@@ -125,11 +164,23 @@ const FormLayout = () => {
                   <label className="mb-3 block text-sm font-medium text-black dark:text-white">
                     Upload PDF
                   </label>
-                  <input
+                  <UploadButton
+                    endpoint="imageUploader"
+                    onClientUploadComplete={async (res: { url: string }[]) => {
+                      if (res && res[0]) {
+                        await saveImageToDatabase(res[0].url);
+                      }
+                    }}
+                    onUploadError={(err: any) => {
+                      console.error(err);
+                      alert("Upload failed");
+                    }}
+                  />
+                  {/* <input
                     type="file"
                     accept="application/pdf"
                     className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 text-black outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
-                  />
+                  /> */}
                 </div>
 
                 {/* Question and Answer Fields */}
